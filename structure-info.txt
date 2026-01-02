@@ -1,0 +1,17 @@
+messenger-app/
+├── node_modules/        (← .gitignore에 자동 추가됨, Java의 build/ 같은 것)
+├── public/              (← 정적 파일, Java의 resources/static 비슷)
+├── src/
+│   ├── assets/         (← 이미지, 폰트 등)
+│   ├── boot/           (← 앱 초기화 코드, Spring의 @Configuration 비슷)
+│   ├── components/     (← Vue 컴포넌트)
+│   ├── layouts/        (← 레이아웃 컴포넌트)
+│   ├── pages/          (← 페이지 컴포넌트)
+│   ├── router/         (← 라우팅 설정)
+│   ├── stores/         (← Pinia 상태관리, Spring의 Service layer 비슷)
+│   ├── App.vue         (← 루트 컴포넌트)
+│   └── main.js         (← 진입점, Spring의 main() 메서드 비슷)
+├── .gitignore
+├── package.json        (← Java의 pom.xml/build.gradle 비슷)
+├── quasar.config.js    (← Quasar 설정, application.yml 비슷)
+└── vite.config.js

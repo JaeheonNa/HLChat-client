@@ -2,15 +2,23 @@ const routes = [
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    children: [
+      {
+        path: '',
+        component: () => import('pages/IndexPage.vue')
+      },
+      {
+        path: 'hl-chat/:roomId/:userId',  // ← 추가
+        name: 'ChatRoom',
+        component: () => import('src/components/ChatRoom.vue'),
+        props: true  // URL 파라미터를 props로 전달
+      }
+    ]
   },
-
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue'),
-  },
+    component: () => import('pages/ErrorNotFound.vue')
+  }
 ]
 
 export default routes

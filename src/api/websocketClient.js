@@ -1,5 +1,5 @@
 export class WebSocketClient {
-  constructor(roomId, baseUrl = 'ws://127.0.0.1:8000') {
+  constructor(roomId, baseUrl = 'ws://10.20.254.193:8000') {
     this.roomId = roomId;
     this.baseUrl = baseUrl;
     this.ws = null;

@@ -149,14 +149,12 @@ const sendMessage = async () => {
 
   try {
     const requestBody = {
-      room_id: "room_001",
+      room_id: props.roomId,
       sender_id: props.userId,
       receiver_id: ["2", "3"],
       message: newMessage.value,
       message_type: "str"
     }
-
-
 
     await messageStore.sendMessage(requestBody)
     newMessage.value = ''

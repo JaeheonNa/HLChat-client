@@ -10,9 +10,10 @@ const routes = [
         meta: { requiresGuest: true }
       },
       {
-        path: '',
+        path: '/:username',
         component: () => import('pages/IndexPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: true },
+        props: true
       },
       {
         path: 'hl-chat/:roomId/:userId',  // ← 추가

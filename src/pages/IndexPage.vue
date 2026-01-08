@@ -28,9 +28,18 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+
+
+const props = defineProps({
+  username: {
+    type: String,
+    required: true
+  }
+})
+
 const router = useRouter()
 const roomId = ref()
-const userId = ref('')
+const userId = ref(props.username)
 
 const enterRoom = () => {
   router.push(`/hl-chat/${roomId.value}/${userId.value}`)

@@ -91,7 +91,7 @@ const handleLogin = async () => {
     });
 
     // 메인 페이지로 이동
-    await router.push('/');
+    await router.push(`/${response.data.username}`);
 
   } catch (error) {
     console.error('Login error:', error);

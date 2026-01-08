@@ -1,5 +1,5 @@
 export class WebSocketClient {
-  constructor(roomId, baseUrl = 'ws://10.20.254.193:8000') {
+  constructor(roomId, baseUrl = 'ws://localhost:8000') {
     this.roomId = roomId;
     this.baseUrl = baseUrl;
     this.ws = null;
@@ -11,6 +11,10 @@ export class WebSocketClient {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
+      this.ws.send(JSON.stringify({
+        type: 'auth',
+        token: sessionStorage.getItem("access_token")
+      }));
       console.log('WebSocket connected');
     };
 

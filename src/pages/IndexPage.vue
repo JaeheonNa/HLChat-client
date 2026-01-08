@@ -29,7 +29,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const roomId = ref(1)
+const roomId = ref()
 const userId = ref('')
 
 const enterRoom = () => {

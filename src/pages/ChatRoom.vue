@@ -159,9 +159,9 @@
 
     <!-- 메시지 입력 -->
     <div class="chat-footer bg-white shadow-up-1">
-      <div class="row items-center q-pa-sm q-gutter-sm">
+      <div class="chat-input-container row items-center q-pa-sm q-gutter-sm">
         <input type="file" ref="fileInputRef" style="display: none" @change="handleFileSelect" accept="image/*, .pdf, .doc, .docx, .zip"/>
-        <q-input v-model="newMessage" outlined dense rounded class="col" placeholder="메시지를 입력하세요..." @keyup.enter="sendMessage" :disable="!isConnected" bg-color="grey-2">
+        <q-input v-model="newMessage" type="textarea" outlined dense rounded autogrow class="col" placeholder="메시지를 입력하세요..." @keyup.enter="handleEnterkey" :disable="!isConnected" bg-color="grey-2">
           <template v-slot:prepend>
             <q-btn round dense flat icon="attach_file" color="grey-7" @click="triggerFileSelect" :disable="!isConnected"/>
           </template>
@@ -237,6 +237,7 @@ const hasMoreMessages = ref(true)
 const fileInputRef = ref(null)
 const imageDialog = ref(false)
 const selectedImage = ref(null)
+const isSending = ref(false)
 
 // computed로 안전하게 가져오기
 /** Computed - START **/
@@ -288,9 +289,24 @@ const scrollToBottom = async () => {
   }
 }
 
+const handleEnterkey = async (event) => {
+  // Shift + Enter: 개행 허용
+  if (event.shiftKey) {
+    return  // 기본 동작(개행) 허용
+  }
+  event.preventDefault()  // 기본 개행 방지
+
+  if (isSending.value) {
+    return
+  }
+  await sendMessage()
+}
+
 // methods (Vue2의 methods와 동일, 단 그냥 함수로 선언)
 const sendMessage = async () => {
   if (!newMessage.value.trim()) return
+
+  isSending.value = true
 
   try {
     const requestBody = {
@@ -310,6 +326,8 @@ const sendMessage = async () => {
       caption: error.message
     })
     console.log(error.message)
+  } finally {
+    isSending.value = false
   }
 }
 

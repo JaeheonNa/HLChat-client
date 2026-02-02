@@ -219,7 +219,7 @@ const handleLogout = () => {
     cancel: true,
     persistent: true
   }).onOk(() => {
-    sessionStorage.removeItem('access_token')
+    sessionStorage.clear()
     dialogVisible.value = false
     router.push('/hl-chat/log-in')
     $q.notify({ type: 'info', message: '로그아웃되었습니다', position: 'top' })

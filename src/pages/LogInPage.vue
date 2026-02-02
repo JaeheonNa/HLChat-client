@@ -111,6 +111,8 @@ const handleLogin = async () => {
     }
 
     sessionStorage.setItem('access_token', response.data.access_token)
+    sessionStorage.setItem('user_id', loginForm.value.user_id)
+    sessionStorage.setItem('username', response.data.username)
 
     $q.notify({
       type: 'positive',

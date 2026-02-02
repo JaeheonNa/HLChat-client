@@ -27,4 +27,7 @@ export const userApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
+  async verifyToken() {
+    return await api.get('/user/verify-token')
+  },
 };

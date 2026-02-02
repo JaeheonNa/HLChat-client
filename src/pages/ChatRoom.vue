@@ -75,7 +75,7 @@
 
               <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
                 <div class="cursor-pointer" @click="viewImage(msg)">
-                  <q-img :src="`${api.defaults.baseURL}/file/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                  <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
                     <template v-slot:error>
                       <div class="absolute-full flex flex-center bg-grey-3">
                         <q-icon name="broken_image" size="2em" color="grey-6" />
@@ -121,7 +121,7 @@
 
               <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
                 <div class="cursor-pointer" @click="viewImage(msg)">
-                  <q-img :src="`${api.defaults.baseURL}/file/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                  <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
                     <template v-slot:error>
                       <div class="absolute-full flex flex-center bg-grey-3">
                         <q-icon name="broken_image" size="2em" color="grey-6" />
@@ -187,7 +187,7 @@
       </q-card-section>
 
       <q-card-section>
-        <q-img :src="selectedImage ? `${api.defaults.baseURL}/file/${selectedImage.fileId}/${props.userId}` : ''" fit="contain" style="max-height: 70vh;"/>
+        <q-img :src="selectedImage ? `${api.defaults.baseURL}/file/info/${selectedImage.fileId}/${props.userId}` : ''" fit="contain" style="max-height: 70vh;"/>
       </q-card-section>
 
       <q-card-actions align="right">

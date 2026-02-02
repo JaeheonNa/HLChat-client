@@ -25,25 +25,26 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // 로그인 요청은 401 처리에서 제외
+    const isLoginRequest = error.config?.url?.includes('/log-in')
+    if (error.response?.status === 401 && !isLoginRequest) {
       // 토큰 만료 시 처리
-      sessionStorage.removeItem('access_token');
-      window.location.href = '/login';
+      sessionStorage.clear()
+      window.location.href = '/hl-chat/log-in'
     }
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
 export const authApi = {
   async login(credentials) {
-    return await api.post('/user/log-in', credentials);
+    return await api.post('/user/log-in', credentials)
   },
 
   async logout() {
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
+    sessionStorage.clear()
   }
-};
+}
 
 export default defineBoot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

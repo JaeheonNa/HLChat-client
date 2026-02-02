@@ -1,0 +1,51 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Node modules (빌드된 dist만 필요)
+node_modules/
+.npm
+.node_repl_history
+
+# Source files (빌드 후에는 불필요)
+src/
+public/
+tests/
+
+# Build config files
+.eslintrc.js
+.prettierrc.json
+eslint.config.js
+postcss.config.js
+jsconfig.json
+quasar.config.js
+package.json
+package-lock.json
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# CI/CD
+.github
+cicd
+Jenkinsfile
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Environment files
+.env
+.env.*
+
+# Build artifacts (dist는 Dockerfile에서 명시적으로 COPY)
+# Docker 빌드 컨텍스트에는 포함되지만 이미지에는 선택적으로만 포함

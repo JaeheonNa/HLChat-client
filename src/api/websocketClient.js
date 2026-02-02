@@ -1,13 +1,21 @@
 export class WebSocketClient {
-  constructor(roomId, baseUrl = 'ws://localhost:8000') {
+  constructor(roomId, baseUrl = null) {
     this.roomId = roomId;
-    this.baseUrl = baseUrl;
+    // Use environment variable or fallback to localhost for development
+    this.baseUrl = baseUrl || process.env.WS_BASE_URL || 'ws://localhost:8000';
     this.ws = null;
     this.messageHandlers = [];
   }
 
   connect() {
-    const wsUrl = `${this.baseUrl}/hl-chat/${this.roomId}`;
+    // Convert relative path to absolute WebSocket URL in runtime
+    let wsBaseUrl = this.baseUrl;
+    if (wsBaseUrl.startsWith('/')) {
+      // Relative path - convert to absolute URL at runtime
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsBaseUrl = `${protocol}//${window.location.host}${wsBaseUrl}`;
+    }
+    const wsUrl = `${wsBaseUrl}/hl-chat`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {

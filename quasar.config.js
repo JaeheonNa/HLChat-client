@@ -38,15 +38,22 @@ export default defineConfig((/* ctx */) => {
       },
 
       vueRouterMode: 'history', // available values: 'hash', 'history'
-      // vueRouterBase,
+      vueRouterBase: '/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      // publicPath: '/',
+      publicPath: '/',
       // analyze: true,
-      // env: {},
+      env: {
+        API_BASE_URL: process.env.ENV_PROFILE === 'prd'
+          ? '/api'
+          : 'http://localhost:8000',
+        WS_BASE_URL: process.env.ENV_PROFILE === 'prd'
+          ? '/ws'
+          : 'ws://localhost:8000',
+      },
       // rawDefine: {}
       // ignorePublicFolder: true,
       // minify: false,

@@ -35,11 +35,11 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
   Router.beforeEach((to, from, next) => {
     const token = sessionStorage.getItem('access_token')
-    const publicPages = ['/log-in', '/register']
+    const publicPages = ['/hl-chat/log-in', '/hl-chat/register']
     const authRequired = !publicPages.includes(to.path)
 
     if (authRequired && !token) {
-      next('/log-in')
+      next('/hl-chat/log-in')
     } else {
       next()
     }

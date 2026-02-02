@@ -5,11 +5,15 @@ import { WebSocketClient } from 'src/api/websocketClient'
 export const useMessageStore = defineStore('message', {
   // Vue2의 data()와 비슷
   state: () => ({
-    messages: [],
+    members: {},
+    allMessages: [],
+    lastMessages: new Map(),
+    xRoomsMessages: new Map(),
     currentRoomId: null,
     wsClient: null,
     isConnected: false,
-    isLoading: false
+    isLoading: false,
+    rcvMessageCnt: 0
   }),
 
   // Vue2의 computed와 비슷
@@ -23,20 +27,22 @@ export const useMessageStore = defineStore('message', {
 
   // Vue2의 methods와 비슷
   actions: {
-    async connectRoom(roomId) {
+    async connectToServer(userList) {
+      for (let i = 0; i < userList.length; i ++) {
+        this.members[userList[i].user_id] = userList[i].user_name
+      }
       if (this.wsClient) {
         this.disconnectRoom()
       }
 
-      this.currentRoomId = roomId
-      this.messages = []
+      // this.lastMessages = new Set()
       this.isLoading = true
 
       // WebSocket 연결
-      this.wsClient = new WebSocketClient(roomId)
+      this.wsClient = new WebSocketClient()
 
       this.wsClient.onMessage((message) => {
-        console.log('New message:', message)
+        this.rcvMessageCnt++
         this.addMessage(message)
       })
 
@@ -47,13 +53,26 @@ export const useMessageStore = defineStore('message', {
 
     addMessage(message) {
       const normalizedMessage = {
-        id: message.id || `${Date.now()}_${Math.random()}`,
-        content: message.message || message.content,
-        sender: message.sender_id || message.sender,
-        timestamp: message.timestamp || new Date().toISOString()
+        roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
+        roomName: message.messageData.roomName,
+        content: message.messageData.lastUpdateMessage,
+        senderId: message.messageData.lastUserId,
+        senderName: this.members[message.messageData.lastUserId],
+        timestamp: message.messageData.lastUpdateAt,
+        lastRead: message.messageData.unreadMessageCount,
+        lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
+        messageType: message.messageData.messageType
       }
-      this.messages.push(normalizedMessage)
-      console.log('메시지 추가됨, 총:', this.messages.length)
+      if (normalizedMessage.messageType === "file") {
+        normalizedMessage.fileId = message.messageData.fileId
+        normalizedMessage.filePath = message.messageData.filePath
+      }
+
+      this.lastMessages.set(Number(message.roomId), normalizedMessage)
+      if (this.xRoomsMessages.has(message.roomId)) {
+        let messages = this.xRoomsMessages.get(message.roomId)
+        messages.push(normalizedMessage)
+      }
     },
 
     async sendMessage(content) {
@@ -66,13 +85,27 @@ export const useMessageStore = defineStore('message', {
       }
     },
 
+    async updateLastRead(roomId, msgLnNo){
+      try {
+        await messageApi.updateLastRead(roomId, msgLnNo)
+      } catch (error) {
+        console.error('updateLastRead error:', error)
+        throw error
+      }
+    },
+
     disconnectRoom() {
       if (this.wsClient) {
         this.wsClient.disconnect()
         this.wsClient = null
       }
       this.isConnected = false
-      this.currentRoomId = null
+    },
+
+    appendXRoomsMessages(roomId, normalizedMessages) {
+      this.rcvMessageCnt += normalizedMessages.length
+      let messages = this.xRoomsMessages.get(roomId)
+      messages.unshift(...normalizedMessages)
     }
   }
 })

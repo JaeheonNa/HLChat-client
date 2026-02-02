@@ -63,7 +63,7 @@ export const useMessageStore = defineStore('message', {
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
         messageType: message.messageData.messageType
       }
-      if (normalizedMessage.messageType === "file") {
+      if (normalizedMessage.messageType === "file" || normalizedMessage.messageType === "img") {
         normalizedMessage.fileId = message.messageData.fileId
         normalizedMessage.filePath = message.messageData.filePath
       }

@@ -4,21 +4,21 @@ export const messageApi = {
   async sendMessage(messageData) {
     return await api.post('/hl-chat', messageData);
   },
-  async findMessagesByRoomId(roomId) {
+  async findMessagesByRoomId(roomId, members) {
     let messages =  await api.get("/hl-chat/init/"+ roomId)
-    let normalizedMessages = messages.data.map(message => {
+    return messages.data.map(message => {
       const normalizedMessage = {
         roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
         roomName: message.messageData.roomName,
         content: message.messageData.lastUpdateMessage,
         senderId: message.messageData.lastUserId,
-        senderName: messageStore.members[message.messageData.lastUserId],
+        senderName: members[message.messageData.lastUserId],
         timestamp: message.messageData.lastUpdateAt,
         lastRead: message.messageData.unreadMessageCount,
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
         messageType: message.messageData.messageType,
       }
-      if (normalizedMessage.messageType === "file") {
+      if (normalizedMessage.messageType === "file" || normalizedMessage.messageType === "img") {
         normalizedMessage.fileId = message.messageData.fileId
         normalizedMessage.filePath = message.messageData.filePath
       }
@@ -28,24 +28,23 @@ export const messageApi = {
       const msgLnNoB = b['lastUpdateMessageLnNo']
       return msgLnNoA - msgLnNoB
     })
-    this.xRoomsMessages.set(props.roomId, normalizedMessages)
   },
-  async findMessagesByRoomIdAndMessageLnNo(roomId, MessageLnNo) {
+  async findMessagesByRoomIdAndMessageLnNo(roomId, MessageLnNo, members) {
     let messages = await api.get("/hl-chat/"+ roomId + "/" + MessageLnNo)
 
-    let normalizedMessages = messages.data.map(message => {
+    return messages.data.map(message => {
       const normalizedMessage = {
         roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
         roomName: message.messageData.roomName,
         content: message.messageData.lastUpdateMessage,
         senderId: message.messageData.lastUserId,
-        senderName: messageStore.members[message.messageData.lastUserId],
+        senderName: members[message.messageData.lastUserId],
         timestamp: message.messageData.lastUpdateAt,
         lastRead: message.messageData.unreadMessageCount,
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
         messageType: message.messageData.messageType
       }
-      if (normalizedMessage.messageType === "file") {
+      if (normalizedMessage.messageType === "file" || normalizedMessage.messageType === "img") {
         normalizedMessage.fileId = message.messageData.fileId
         normalizedMessage.filePath = message.messageData.filePath
       }
@@ -55,7 +54,6 @@ export const messageApi = {
       const msgLnNoB = b['lastUpdateMessageLnNo']
       return msgLnNoA - msgLnNoB
     })
-    this.appendXRoomsMessages(roomId, normalizedMessages)
   },
   async updateLastRead(roomId, msgLnNo) {
     const request = {

@@ -11,13 +11,7 @@
           <div class="text-subtitle1 text-weight-bold">{{ displayRoomName }}</div>
           <div class="text-caption text-blue-2">{{ currentMessages.length }}개의 메시지</div>
         </q-toolbar-title>
-        <q-btn
-          flat
-          round
-          dense
-          :icon="isConnected ? 'wifi' : 'wifi_off'"
-          :color="isConnected ? 'white' : 'red-3'"
-        >
+        <q-btn flat round dense :icon="isConnected ? 'wifi' : 'wifi_off'" :color="isConnected ? 'white' : 'red-3'">
           <q-tooltip>{{ isConnected ? '연결됨' : '연결 끊김' }}</q-tooltip>
         </q-btn>
         <q-btn flat round dense icon="more_vert">
@@ -78,14 +72,22 @@
           <!-- 내 메시지 (오른쪽) -->
           <div v-if="msg.senderId === props.userId" class="message-row my-message-row">
             <div class="message-wrapper">
-              <div v-if="msg.messageType === 'img'" class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <q-img
-                  :src="msg.content"
-                  style="max-width: 200px; border-radius: 8px; cursor: pointer"
-                  @click="showImagePreview(msg.content)"
-                  spinner-color="white"
-                />
+
+              <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                <div class="cursor-pointer" @click="viewImage(msg)">
+                  <q-img :src="`${api.defaults.baseURL}/file/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                    <template v-slot:error>
+                      <div class="absolute-full flex flex-center bg-grey-3">
+                        <q-icon name="broken_image" size="2em" color="grey-6" />
+                      </div>
+                    </template>
+                  </q-img>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    {{ msg.content }}
+                  </div>
+                </div>
               </div>
+
               <div v-else-if="msg.messageType === 'file'" class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
                 <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
                   <q-icon name="description" size="2em" color="grey-7" />
@@ -107,13 +109,7 @@
           <div v-else class="message-row other-message-row">
             <!-- 아바타 -->
             <div class="avatar-space">
-              <q-avatar
-                v-if="!isContinuousMessage(msg, index)"
-                size="32px"
-                color="grey-5"
-                text-color="white"
-                class="avatar"
-              >
+              <q-avatar v-if="!isContinuousMessage(msg, index)" size="32px" color="grey-5" text-color="white" class="avatar">
                 {{ getInitial(msg.senderName) }}
               </q-avatar>
             </div>
@@ -122,14 +118,22 @@
               <div v-if="!isContinuousMessage(msg, index)" class="sender-name">
                 {{ msg.senderName }}
               </div>
+
               <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <q-img
-                  :src="msg.content"
-                  style="max-width: 200px; border-radius: 8px; cursor: pointer"
-                  @click="showImagePreview(msg.content)"
-                  spinner-color="white"
-                />
+                <div class="cursor-pointer" @click="viewImage(msg)">
+                  <q-img :src="`${api.defaults.baseURL}/file/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                    <template v-slot:error>
+                      <div class="absolute-full flex flex-center bg-grey-3">
+                        <q-icon name="broken_image" size="2em" color="grey-6" />
+                      </div>
+                    </template>
+                  </q-img>
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    {{ msg.content }}
+                  </div>
+                </div>
               </div>
+
               <div v-else-if="msg.messageType === 'file'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
                 <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
                   <q-icon name="description" size="2em" color="grey-7" />
@@ -156,34 +160,10 @@
     <!-- 메시지 입력 -->
     <div class="chat-footer bg-white shadow-up-1">
       <div class="row items-center q-pa-sm q-gutter-sm">
-        <input
-          type="file"
-          ref="fileInputRef"
-          style="display: none"
-          @change="handleFileSelect"
-          accept="image/*, .pdf, .doc, .docx, .zip"
-        />
-        <q-input
-          v-model="newMessage"
-          outlined
-          dense
-          rounded
-          class="col"
-          placeholder="메시지를 입력하세요..."
-          @keyup.enter="sendMessage"
-          :disable="!isConnected"
-          bg-color="grey-2"
-        >
+        <input type="file" ref="fileInputRef" style="display: none" @change="handleFileSelect" accept="image/*, .pdf, .doc, .docx, .zip"/>
+        <q-input v-model="newMessage" outlined dense rounded class="col" placeholder="메시지를 입력하세요..." @keyup.enter="sendMessage" :disable="!isConnected" bg-color="grey-2">
           <template v-slot:prepend>
-            <q-btn
-              round
-              dense
-              flat
-              icon="attach_file"
-              color="grey-7"
-              @click="triggerFileSelect"
-              :disable="!isConnected"
-            />
+            <q-btn round dense flat icon="attach_file" color="grey-7" @click="triggerFileSelect" :disable="!isConnected"/>
           </template>
           <template v-slot:append>
             <q-btn flat round dense icon="emoji_emotions" color="grey-6">
@@ -191,19 +171,30 @@
             </q-btn>
           </template>
         </q-input>
-        <q-btn
-          round
-          dense
-          icon="send"
-          color="primary"
-          @click="sendMessage"
-          :disable="!newMessage.trim() || !isConnected"
-        >
+        <q-btn round dense icon="send" color="primary" @click="sendMessage" :disable="!newMessage.trim() || !isConnected">
           <q-tooltip>전송</q-tooltip>
         </q-btn>
       </div>
     </div>
   </q-page>
+
+  <q-dialog v-model="imageDialog">
+    <q-card style="min-width: 80vw;">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">{{ selectedImage?.content }}</div>
+        <q-space />
+        <q-btn icon="close" flat round dense v-close-popup />
+      </q-card-section>
+
+      <q-card-section>
+        <q-img :src="selectedImage ? `${api.defaults.baseURL}/file/${selectedImage.fileId}/${props.userId}` : ''" fit="contain" style="max-height: 70vh;"/>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn label="다운로드" color="primary" @click="downloadFile(selectedImage)"/>
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -213,6 +204,7 @@ import { useQuasar } from 'quasar'
 import { useMessageStore } from 'stores/messageStore.js'
 import {messageApi} from "src/api/messageApi.js"
 import {fileApi} from "src/api/fileApi.js"
+import {api} from 'boot/axios'
 
 // Vue2: this.$router, this.$route
 // Vue3: useRouter(), useRoute()
@@ -243,6 +235,8 @@ const scrollAnchorRef = ref(null)
 const loadingPrevious = ref(false)
 const hasMoreMessages = ref(true)
 const fileInputRef = ref(null)
+const imageDialog = ref(false)
+const selectedImage = ref(null)
 
 // computed로 안전하게 가져오기
 /** Computed - START **/
@@ -259,7 +253,8 @@ onBeforeMount(() => {
   }
 })
 onMounted(async () => {
-  await messageApi.findMessagesByRoomId(props.roomId)
+  const normalizedMessages = await messageApi.findMessagesByRoomId(props.roomId, messageStore.members)
+  messageStore.xRoomsMessages.set(props.roomId, normalizedMessages)
   if (currentMessages.value.length > 0){
     const msgLnNo = currentMessages.value[currentMessages.value.length-1].lastUpdateMessageLnNo
     await messageStore.updateLastRead(props.roomId, msgLnNo)
@@ -349,7 +344,8 @@ const loadPreviousMessages = async () => {
 }
 
 const fetchPreviousMessages = async (roomId) => {
-  await messageApi.findMessagesByRoomIdAndMessageLnNo(roomId, currentMessages.value[0].lastUpdateMessageLnNo)
+  const normalizedMessages = await messageApi.findMessagesByRoomIdAndMessageLnNo(roomId, currentMessages.value[0].lastUpdateMessageLnNo, messageStore.members)
+  messageStore.appendXRoomsMessages(roomId, normalizedMessages)
 }
 
 const formatTime = (timestamp) => {
@@ -396,34 +392,6 @@ const uploadFile = async (file) => {
   formData.append('message_type', msgType)
   await messageApi.sendFileAndMessage(formData)
   await scrollToBottom()
-}
-
-const showImagePreview = (src) => {
-  $q.dialog({
-    component: {
-      template: `
-        <q-dialog ref="dialog" @hide="onDialogHide">
-          <q-card style="max-width: 90vw;">
-            <q-img :src="src" />
-            <q-card-actions align="right">
-              <q-btn color="primary" label="닫기" @click="onDialogOK" />
-            </q-card-actions>
-          </q-card>
-        </q-dialog>
-      `,
-      props: ['src'],
-      emits: ['ok', 'hide'],
-      setup() {
-        return {
-          show: () => {}, // Quasar dialog interface 요구사항
-          hide: () => {},
-          onDialogHide: () => {},
-          onDialogOK: () => {}
-        }
-      }
-    },
-    componentProps: { src }
-  })
 }
 
 const downloadFile = async (msg) => {
@@ -491,6 +459,11 @@ const myPageStyle = (offset) => {
   // offset: MainLayout의 헤더와 푸터 높이의 합
   // 100dvh에서 offset만큼 뺀 높이를 적용합니다.
   return { height: `calc(100dvh - ${offset}px)` }
+}
+
+const viewImage = (msg) => {
+  selectedImage.value =  msg
+  imageDialog.value = true
 }
 </script>
 <style scoped>

@@ -687,4 +687,13 @@ const viewImage = (msg) => {
 .chat-footer .q-btn:active:not(:disabled) {
   transform: scale(0.95);
 }
+
+.chat-input-container {
+  border-top: 1px solid #e0e0e0;
+  background: white;
+}
+
+.chat-input {
+  max-height: 150px;  /* 최대 높이 제한 */
+}
 </style>

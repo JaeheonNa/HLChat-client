@@ -40,7 +40,7 @@
       </q-item-section>
       <q-item-section>
         <q-item-label>{{ room.roomName }}</q-item-label>
-        <q-item-label caption lines="1">{{ room.content }}</q-item-label>
+        <q-item-label caption lines="1">{{ displayContent }}</q-item-label>
       </q-item-section>
       <q-item-section side top>
         <q-item-label caption>{{ formatTime(room.timestamp) }}</q-item-label>
@@ -82,7 +82,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+
+const emoticonsMap = ref({})
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/emoticon/common/emoticons.json')
+    const data = await response.json()
+    data.emoticons.forEach(e => {
+      emoticonsMap.value[e.file] = e.name
+    })
+  } catch (error) {
+    console.error('이모티콘 목록 로드 실패:', error)
+  }
+})
 
 const props = defineProps({
   room: {
@@ -106,6 +120,15 @@ const props = defineProps({
 const emit = defineEmits(['select', 'pin', 'mute', 'leave'])
 
 const showContextMenu = ref(false)
+
+const displayContent = computed(() => {
+  // messageType이 emoticon이거나, content가 이모티콘 파일명인 경우
+  if (props.room.messageType === 'emoticon' || emoticonsMap.value[props.room.content]) {
+    const name = emoticonsMap.value[props.room.content]
+    return name ? `(${name})` : props.room.content
+  }
+  return props.room.content
+})
 
 const onLeftSwipe = ({ reset }) => {
   emit('pin', props.room.roomId)

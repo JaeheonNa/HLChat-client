@@ -25,8 +25,12 @@
                 <q-item-section avatar><q-icon name="notifications" /></q-item-section>
                 <q-item-section>알림 설정</q-item-section>
               </q-item>
+              <q-item clickable v-close-popup @click="showTeamChatDialog = true">
+                <q-item-section avatar><q-icon name="invitation" /></q-item-section>
+                <q-item-section>초대하기</q-item-section>
+              </q-item>
               <q-separator />
-              <q-item clickable v-close-popup class="text-negative">
+              <q-item clickable v-close-popup @click="handleLeaveRoom" class="text-negative">
                 <q-item-section avatar><q-icon name="exit_to_app" /></q-item-section>
                 <q-item-section>채팅방 나가기</q-item-section>
               </q-item>
@@ -69,38 +73,75 @@
             <span class="date-label">{{ formatDate(msg.timestamp) }}</span>
           </div>
 
+          <div v-if="msg.messageType === 'system'" class="date-divider q-my-lg">
+            <span class="date-label">{{ msg.content }}</span>
+          </div>
+
           <!-- 내 메시지 (오른쪽) -->
-          <div v-if="msg.senderId === props.userId" class="message-row my-message-row">
-            <div class="message-wrapper">
+          <div v-else-if="msg.senderId === props.userId" class="message-row my-message-row">
+            <div class="message-wrapper my-message-wrapper">
+              <div class="message-content-row" v-touch-hold.mouse="() => handleLongPress(msg)">
+                <!-- 반응 추가 버튼 -->
+                <q-btn
+                  class="reaction-add-btn"
+                  round
+                  flat
+                  dense
+                  size="sm"
+                  icon="add_reaction"
+                  color="grey-6"
+                >
+                  <ReactionPicker @select="handleReactionSelect(msg, $event)" />
+                </q-btn>
 
-              <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <div class="cursor-pointer" @click="viewImage(msg)">
-                  <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
-                    <template v-slot:error>
-                      <div class="absolute-full flex flex-center bg-grey-3">
-                        <q-icon name="broken_image" size="2em" color="grey-6" />
-                      </div>
-                    </template>
-                  </q-img>
-                  <div class="text-caption text-grey-7 q-mt-xs">
-                    {{ msg.content }}
-                  </div>
-                </div>
-              </div>
-
-              <div v-else-if="msg.messageType === 'file'" class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
-                  <q-icon name="description" size="2em" color="grey-7" />
-                  <div class="column">
-                    <q-btn @click="downloadFile(msg)" target="_blank" class="text-weight-bold" style="text-decoration: none; color: inherit;">
+                <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <div class="cursor-pointer" @click="viewImage(msg)">
+                    <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                      <template v-slot:error>
+                        <div class="absolute-full flex flex-center bg-grey-3">
+                          <q-icon name="broken_image" size="2em" color="grey-6" />
+                        </div>
+                      </template>
+                    </q-img>
+                    <div class="text-caption text-grey-7 q-mt-xs">
                       {{ msg.content }}
-                    </q-btn>
+                    </div>
                   </div>
                 </div>
+
+                <div v-else-if="msg.messageType === 'file'" class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
+                    <q-icon name="description" size="2em" color="grey-7" />
+                    <div class="column">
+                      <q-btn @click="downloadFile(msg)" target="_blank" class="text-weight-bold" style="text-decoration: none; color: inherit;">
+                        {{ msg.content }}
+                      </q-btn>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="msg.messageType === 'emoticon'" class="emoticon-message">
+                  <q-img
+                    :src="`/emoticon/common/${msg.content}`"
+                    width="80px"
+                    height="80px"
+                    fit="contain"
+                  />
+                </div>
+                <div v-else class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <span class="message-text"> {{ msg.content }} </span>
+                </div>
               </div>
-              <div v-else class="message-bubble my-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <span class="message-text"> {{ msg.content }} </span>
-              </div>
+
+              <!-- 반응 표시 영역 -->
+              <MessageReactions
+                v-if="hasReactions(msg.lastUpdateMessageLnNo)"
+                :reactions="getMessageReactions(msg.lastUpdateMessageLnNo)"
+                :current-user-id="props.userId"
+                :message-ln-no="msg.lastUpdateMessageLnNo"
+                @toggle="handleReactionToggle"
+                class="my-reactions"
+              />
+
               <div class="message-time my-time">{{ formatTime(msg.timestamp) }}</div>
             </div>
           </div>
@@ -110,43 +151,78 @@
             <!-- 아바타 -->
             <div class="avatar-space">
               <q-avatar v-if="!isContinuousMessage(msg, index)" size="32px" color="grey-5" text-color="white" class="avatar">
-                {{ getInitial(msg.senderName) }}
+                <img v-if="msg.senderProfileImage" :src="getProfileImageUrl(msg.senderProfileImage)" />
+                <span v-else>{{ getInitial(msg.senderName) }}</span>
               </q-avatar>
             </div>
-            <div class="message-wrapper">
+            <div class="message-wrapper other-message-wrapper">
               <!-- 발신자 이름 -->
               <div v-if="!isContinuousMessage(msg, index)" class="sender-name">
                 {{ msg.senderName }}
               </div>
 
-              <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <div class="cursor-pointer" @click="viewImage(msg)">
-                  <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
-                    <template v-slot:error>
-                      <div class="absolute-full flex flex-center bg-grey-3">
-                        <q-icon name="broken_image" size="2em" color="grey-6" />
-                      </div>
-                    </template>
-                  </q-img>
-                  <div class="text-caption text-grey-7 q-mt-xs">
-                    {{ msg.content }}
+              <div class="message-content-row" v-touch-hold.mouse="() => handleLongPress(msg)">
+                <div v-if="msg.messageType === 'img'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <div class="cursor-pointer" @click="viewImage(msg)">
+                    <q-img :src="`${api.defaults.baseURL}/file/info/${msg.fileId}/${props.userId}`" :ratio="16/9" style="max-width: 300px; border-radius: 8px;" spinner-color="primary" spinner-size="2em">
+                      <template v-slot:error>
+                        <div class="absolute-full flex flex-center bg-grey-3">
+                          <q-icon name="broken_image" size="2em" color="grey-6" />
+                        </div>
+                      </template>
+                    </q-img>
+                    <div class="text-caption text-grey-7 q-mt-xs">
+                      {{ msg.content }}
+                    </div>
                   </div>
                 </div>
+
+                <div v-else-if="msg.messageType === 'file'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
+                    <q-icon name="description" size="2em" color="grey-7" />
+                    <div class="column">
+                      <q-btn @click="downloadFile(msg)" target="_blank" class="text-weight-bold" style="text-decoration: none; color: inherit;">
+                        {{ msg.content }}
+                      </q-btn>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="msg.messageType === 'emoticon'" class="emoticon-message">
+                  <q-img
+                    :src="`/emoticon/common/${msg.content}`"
+                    width="80px"
+                    height="80px"
+                    fit="contain"
+                  />
+                </div>
+                <div v-else class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
+                  <span class="message-text">{{ msg.content }}</span>
+                </div>
+
+                <!-- 반응 추가 버튼 -->
+                <q-btn
+                  class="reaction-add-btn"
+                  round
+                  flat
+                  dense
+                  size="sm"
+                  icon="add_reaction"
+                  color="grey-6"
+                >
+                  <ReactionPicker @select="handleReactionSelect(msg, $event)" />
+                </q-btn>
               </div>
 
-              <div v-else-if="msg.messageType === 'file'" class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <div class="flex items-center q-gutter-sm bg-grey-2 q-pa-sm rounded-borders">
-                  <q-icon name="description" size="2em" color="grey-7" />
-                  <div class="column">
-                    <q-btn @click="downloadFile(msg)" target="_blank" class="text-weight-bold" style="text-decoration: none; color: inherit;">
-                      {{ msg.content }}
-                    </q-btn>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="message-bubble other-bubble" :class="{ continuous: isContinuousMessage(msg, index) }">
-                <span class="message-text">{{ msg.content }}</span>
-              </div>
+              <!-- 반응 표시 영역 -->
+              <MessageReactions
+                v-if="hasReactions(msg.lastUpdateMessageLnNo)"
+                :reactions="getMessageReactions(msg.lastUpdateMessageLnNo)"
+                :current-user-id="props.userId"
+                :message-ln-no="msg.lastUpdateMessageLnNo"
+                @toggle="handleReactionToggle"
+                class="other-reactions"
+              />
+
               <div class="message-time other-time">{{ formatTime(msg.timestamp) }}</div>
             </div>
           </div>
@@ -167,7 +243,7 @@
           </template>
           <template v-slot:append>
             <q-btn flat round dense icon="emoji_emotions" color="grey-6">
-              <q-tooltip>이모지</q-tooltip>
+              <EmoticonPicker @select="sendEmoticon" />
             </q-btn>
           </template>
         </q-input>
@@ -195,9 +271,92 @@
       </q-card-actions>
     </q-card>
   </q-dialog>
+
+  <!-- 팀채팅 생성 다이얼로그 -->
+  <q-dialog v-model="showTeamChatDialog" persistent>
+    <q-card style="min-width: 350px; max-height: 80vh">
+      <q-card-section>
+        <div class="text-h6">팀채팅 만들기</div>
+      </q-card-section>
+
+      <q-card-section>
+        <q-input v-model="teamChatSearch" dense outlined placeholder="친구 검색..." clearable>
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </q-card-section>
+
+      <q-card-section v-if="selectedFriends.length > 0" class="q-pt-none">
+        <q-chip
+          v-for="friend in selectedFriends"
+          :key="friend.user_id"
+          removable
+          color="primary"
+          text-color="white"
+          @remove="toggleFriendSelection(friend)"
+        >
+          {{ friend.user_name }}
+        </q-chip>
+      </q-card-section>
+
+      <q-card-section style="max-height: 300px; overflow-y: auto" class="q-pt-none">
+        <q-list separator>
+          <q-item
+            v-for="user in filteredTeamChatUsers"
+            :key="user.user_id"
+            clickable
+            @click="toggleFriendSelection(user)"
+          >
+            <q-item-section side>
+              <q-checkbox :model-value="isSelected(user)" @update:model-value="toggleFriendSelection(user)" />
+            </q-item-section>
+            <q-item-section avatar>
+              <q-avatar color="grey-4">
+                <q-icon name="person" />
+              </q-avatar>
+            </q-item-section>
+            <q-item-section>{{ user.user_name }}</q-item-section>
+          </q-item>
+        </q-list>
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn flat label="취소" color="grey" @click="closeTeamChatDialog" />
+        <q-btn flat label="생성" color="primary" :disable="selectedFriends.length < 1" @click="inviteMembers" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+
+  <!-- 반응 선택 다이얼로그 (모바일 long press용) -->
+  <q-dialog v-model="reactionDialog" position="bottom">
+    <q-card class="reaction-dialog-card">
+      <q-card-section class="q-pa-md">
+        <div class="text-subtitle2 text-grey-7 q-mb-sm">반응 선택</div>
+        <div class="reaction-dialog-grid">
+          <div
+            v-for="reaction in reactionList"
+            :key="reaction.id"
+            class="reaction-dialog-item"
+            @click="selectReactionFromDialog(reaction)"
+          >
+            <q-img
+              :src="`/reaction/${reaction.file}`"
+              :alt="reaction.name"
+              width="40px"
+              height="40px"
+              fit="contain"
+            />
+            <div class="text-caption text-grey-7">{{ reaction.name }}</div>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
+/* eslint-disable no-unused-vars */
 import { ref, computed, onMounted, onUnmounted, nextTick, watch, onBeforeMount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
@@ -205,12 +364,31 @@ import { useMessageStore } from 'stores/messageStore.js'
 import {messageApi} from "src/api/messageApi.js"
 import {fileApi} from "src/api/fileApi.js"
 import {api} from 'boot/axios'
+import {userApi} from "src/api/userApi.js"
+import {roomApi} from "src/api/roomApi.js"
+import EmoticonPicker from "src/components/EmoticonPicker.vue"
+import ReactionPicker from "src/components/ReactionPicker.vue"
+import MessageReactions from "src/components/MessageReactions.vue"
+import { useReactionStore } from 'stores/reactionStore.js'
+
+const STATIC_BASE_URL = process.env.API_BASE_URL === '/api'
+  ? ''  // 프로덕션: 상대 경로 사용 (nginx가 /static을 백엔드로 프록시)
+  : (process.env.API_BASE_URL || 'http://localhost:8000')
+
+const getProfileImageUrl = (imageUrl) => {
+  if (!imageUrl) return null
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl
+  }
+  return `${STATIC_BASE_URL}${imageUrl}`
+}
 
 // Vue2: this.$router, this.$route
 // Vue3: useRouter(), useRoute()
 const router = useRouter()
 const $q = useQuasar()
 const messageStore = useMessageStore()
+const reactionStore = useReactionStore()
 
 // props 받기 (라우터에서 props: true 설정했으므로)
 const props = defineProps({
@@ -238,6 +416,13 @@ const fileInputRef = ref(null)
 const imageDialog = ref(false)
 const selectedImage = ref(null)
 const isSending = ref(false)
+const showTeamChatDialog = ref(false)
+const selectedFriends = ref([])
+const teamChatSearch = ref('')
+const userList = ref()
+const reactionDialog = ref(false)
+const reactionList = ref([])
+const longPressedMessage = ref(null)
 
 // computed로 안전하게 가져오기
 /** Computed - START **/
@@ -246,6 +431,17 @@ const currentMessages = computed(() =>
 )
 const isConnected = computed(() => messageStore.isConnected)
 const isLoading = computed(() => messageStore.isLoading)
+// 팀채팅 친구 목록 필터링
+const filteredTeamChatUsers = computed(() => {
+  if (!userList.value) return []
+  if (!teamChatSearch.value) return userList.value
+  const query = teamChatSearch.value.toLowerCase()
+  return userList.value.filter(u =>
+    u.user_name?.toLowerCase().includes(query) ||
+    u.user_id?.toLowerCase().includes(query)
+  )
+})
+
 /** Computed - END **/
 
 onBeforeMount(() => {
@@ -254,13 +450,36 @@ onBeforeMount(() => {
   }
 })
 onMounted(async () => {
+  // 사용자 목록 먼저 로드
+  const returnUserData = await userApi.findUserList()
+
+  // WebSocket 연결 확인 (새로고침 시 연결이 끊어진 경우 재연결)
+  if (!messageStore.isConnected) {
+    await messageStore.connectToServer(returnUserData.data.users, props.userId)
+  }
+
   const normalizedMessages = await messageApi.findMessagesByRoomId(props.roomId, messageStore.members)
   messageStore.xRoomsMessages.set(props.roomId, normalizedMessages)
+
+  // 반응 데이터 로드
+  await reactionStore.loadRoomReactions(props.roomId)
+
+  // 반응 목록 로드 (다이얼로그용)
+  try {
+    const response = await fetch('/reaction/reactions.json')
+    const data = await response.json()
+    reactionList.value = data.reactions
+  } catch (error) {
+    console.error('반응 목록 로드 실패:', error)
+  }
+
   if (currentMessages.value.length > 0){
     const msgLnNo = currentMessages.value[currentMessages.value.length-1].lastUpdateMessageLnNo
     await messageStore.updateLastRead(props.roomId, msgLnNo)
     scrollToBottom()
   }
+  const roomInfo = await roomApi.findRoomInfoByRoomId(props.roomId)
+  userList.value = returnUserData.data.users.filter(user => !roomInfo.data.members.includes(user.user_id))
 })
 onUnmounted(() => {
 })
@@ -282,6 +501,26 @@ watch(() => currentMessages.value.length, async () => {
 })
 
 /** Methods **/
+const toggleFriendSelection = (user) => {
+  const idx = selectedFriends.value.findIndex(f => f.user_id === user.user_id)
+  if (idx > -1) {
+    selectedFriends.value.splice(idx, 1)
+  } else {
+    selectedFriends.value.push(user)
+  }
+}
+
+const isSelected = (user) => {
+  return selectedFriends.value.some(f => f.user_id === user.user_id)
+}
+
+const closeTeamChatDialog = () => {
+  nextTick()
+  showTeamChatDialog.value = false
+  selectedFriends.value = []
+  teamChatSearch.value = ''
+}
+
 const scrollToBottom = async () => {
   await nextTick()
   if (scrollAreaRef.value) {
@@ -328,6 +567,26 @@ const sendMessage = async () => {
     console.log(error.message)
   } finally {
     isSending.value = false
+  }
+}
+
+const sendEmoticon = async (emoticon) => {
+  try {
+    const requestBody = {
+      room_id: props.roomId,
+      sender_id: props.userId,
+      message: emoticon.file,
+      message_type: 'emoticon'
+    }
+
+    await messageStore.sendMessage(requestBody)
+    await scrollToBottom()
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: '이모티콘 전송 실패',
+      caption: error.message
+    })
   }
 }
 
@@ -483,6 +742,143 @@ const viewImage = (msg) => {
   selectedImage.value =  msg
   imageDialog.value = true
 }
+
+// 반응 관련 메서드
+const hasReactions = (messageLnNo) => {
+  return reactionStore.hasReactions(props.roomId, messageLnNo)
+}
+
+const getMessageReactions = (messageLnNo) => {
+  return reactionStore.getMessageReactions(props.roomId, messageLnNo)
+}
+
+const handleReactionSelect = async (msg, reaction) => {
+  try {
+    await reactionStore.toggleReaction(
+      props.roomId,
+      msg.lastUpdateMessageLnNo,
+      reaction.id,
+      props.userId,
+      props.username
+    )
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: '반응 추가 실패',
+      caption: error.message
+    })
+  }
+}
+
+const handleReactionToggle = async ({ type, messageLnNo }) => {
+  try {
+    await reactionStore.toggleReaction(
+      props.roomId,
+      messageLnNo,
+      type,
+      props.userId,
+      props.username
+    )
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: '반응 변경 실패',
+      caption: error.message
+    })
+  }
+}
+
+// 모바일 long press 핸들러
+const handleLongPress = (msg) => {
+  longPressedMessage.value = msg
+  reactionDialog.value = true
+}
+
+// 다이얼로그에서 반응 선택
+const selectReactionFromDialog = async (reaction) => {
+  if (!longPressedMessage.value) return
+
+  try {
+    await reactionStore.toggleReaction(
+      props.roomId,
+      longPressedMessage.value.lastUpdateMessageLnNo,
+      reaction.id,
+      props.userId,
+      props.username
+    )
+  } catch (error) {
+    $q.notify({
+      type: 'negative',
+      message: '반응 추가 실패',
+      caption: error.message
+    })
+  } finally {
+    reactionDialog.value = false
+    longPressedMessage.value = null
+  }
+}
+
+const handleLeaveRoom = () => {
+  // 확인 다이얼로그
+  $q.dialog({
+    title: '채팅방 나가기',
+    message: '정말로 이 채팅방을 나가시겠습니까?',
+    cancel: {
+      label: '취소',
+      color: 'grey',
+      flat: true
+    },
+    ok: {
+      label: '나가기',
+      color: 'negative',
+      flat: true
+    },
+    persistent: true
+  }).onOk(async () => {
+    try {
+      await roomApi.leaveXRoom(props.roomId)
+      const requestBody = {
+        room_id: props.roomId,
+        sender_id: props.userId,
+        message: props.username + "님이 채팅방을 나갔습니다.",
+        message_type: "system"
+      }
+      await messageStore.sendMessage(requestBody)
+      $q.notify({
+        type: 'positive',
+        message: '채팅방을 나갔습니다'
+      })
+      messageStore.clearLeavedRoomMessage(props.roomId)
+      // 채팅방 목록으로 이동
+      router.push(`/hl-chat/${props.username}/${props.userId}`)
+    } catch (error) {
+      $q.notify({
+        type: 'negative',
+        message: '채팅방 나가기에 실패했습니다'
+      })
+    }
+  })
+}
+
+const inviteMembers = async () => {
+  const members = selectedFriends.value.map(f => f.user_id)
+  const newMembers = await roomApi.inviteMembers(props.roomId, members)
+  userList.value = [...userList.value, ...newMembers.data.users]
+  let msg = props.username + "님이 "
+  for (let i = 0; i < newMembers.data.users.length; i++) {
+    msg += newMembers.data.users[i].user_name + "님, "
+  }
+  msg = msg.trimEnd().slice(0, -1)
+  msg += "을 초대했습니다."
+  const requestBody = {
+    room_id: props.roomId,
+    sender_id: props.userId,
+    message: msg,
+    message_type: "system"
+  }
+  await messageStore.sendMessage(requestBody)
+  closeTeamChatDialog()
+}
 </script>
 <style scoped>
 .chat-page {
@@ -591,6 +987,18 @@ const viewImage = (msg) => {
   max-width: 100%;
 }
 
+.my-message-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.other-message-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 /* 발신자 이름 */
 .sender-name {
   font-size: 12px;
@@ -695,5 +1103,77 @@ const viewImage = (msg) => {
 
 .chat-input {
   max-height: 150px;  /* 최대 높이 제한 */
+}
+
+/* 이모티콘 메시지 */
+.emoticon-message {
+  padding: 4px;
+}
+
+/* 반응 관련 스타일 */
+.message-content-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reaction-add-btn {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.message-content-row:hover .reaction-add-btn {
+  opacity: 0.7;
+}
+
+.reaction-add-btn:hover {
+  opacity: 1 !important;
+}
+
+.my-reactions {
+  justify-content: flex-end;
+  padding-right: 4px;
+}
+
+.other-reactions {
+  justify-content: flex-start;
+  padding-left: 4px;
+}
+
+/* 반응 선택 다이얼로그 (모바일) */
+.reaction-dialog-card {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px 16px 0 0;
+}
+
+.reaction-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  max-height: 280px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.reaction-dialog-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reaction-dialog-item:hover {
+  background-color: #f0f0f0;
+}
+
+.reaction-dialog-item:active {
+  background-color: #e0e0e0;
+  transform: scale(0.95);
 }
 </style>

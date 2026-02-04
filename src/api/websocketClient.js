@@ -7,7 +7,7 @@ export class WebSocketClient {
     this.messageHandlers = [];
   }
 
-  connect() {
+  connect(userId) {
     // Convert relative path to absolute WebSocket URL in runtime
     let wsBaseUrl = this.baseUrl;
     if (wsBaseUrl.startsWith('/')) {
@@ -15,7 +15,7 @@ export class WebSocketClient {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsBaseUrl = `${protocol}//${window.location.host}${wsBaseUrl}`;
     }
-    const wsUrl = `${wsBaseUrl}/hl-chat`;
+    const wsUrl = `${wsBaseUrl}/hl-chat/${userId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
@@ -23,7 +23,6 @@ export class WebSocketClient {
         type: 'auth',
         token: sessionStorage.getItem("access_token")
       }));
-      console.log('WebSocket connected');
     };
 
     this.ws.onmessage = (event) => {
@@ -32,7 +31,6 @@ export class WebSocketClient {
     };
 
     this.ws.onclose = () => {
-      console.log('WebSocket closed');
     };
   }
 

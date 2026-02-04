@@ -81,7 +81,7 @@
 
           <q-input
             v-model="form.phone"
-            label="전화번호"
+            label="전화번호 *"
             outlined
             dense
             mask="###-####-####"
@@ -101,6 +101,14 @@
             </template>
           </q-input>
         </q-form>
+
+        <div class="flex items-center q-my-md">
+          <q-separator class="col" />
+          <span class="q-mx-sm text-grey-6 text-caption">또는</span>
+          <q-separator class="col" />
+        </div>
+
+        <KakaoLoginButton />
       </q-card-section>
 
       <q-card-actions align="right">
@@ -115,6 +123,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { userApi } from 'src/api/userApi'
+import KakaoLoginButton from 'src/components/KakaoLoginButton.vue'
 
 const props = defineProps({
   modelValue: {
@@ -182,6 +191,10 @@ const validateForm = () => {
   }
   if (form.value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
     $q.notify({ type: 'negative', message: '올바른 이메일 형식을 입력하세요', position: 'top' })
+    return false
+  }
+  if (!form.value.phone) {
+    $q.notify({ type: 'negative', message: '전화번호를 입력하세요', position: 'top' })
     return false
   }
   return true

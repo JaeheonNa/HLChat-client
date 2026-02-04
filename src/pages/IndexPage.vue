@@ -475,7 +475,7 @@ const loadData = async () => {
   try {
     const returnUserData = await userApi.findUserList()
     userList.value = returnUserData.data.users
-    await messageStore.connectToServer(userList.value)
+    await messageStore.connectToServer(userList.value, props.userId)
   } catch (error) {
     hasError.value = true
     errorMessage.value = error.message || '데이터를 불러오는 중 오류가 발생했습니다'
@@ -665,6 +665,7 @@ const isSelected = (user) => {
 
 // 팀채팅 다이얼로그 닫기
 const closeTeamChatDialog = () => {
+  nextTick()
   showTeamChatDialog.value = false
   selectedFriends.value = []
   teamChatSearch.value = ''
@@ -674,8 +675,14 @@ const closeTeamChatDialog = () => {
 const createTeamChat = async () => {
   try {
     const members = selectedFriends.value.map(f => f.user_id)
-    const result = await roomApi.createGroupRoom(members)
-    roomId.value = result.data
+    // 1명만 선택한 경우 기존 1:1 채팅방 연결
+    if (members.length === 1) {
+      const result = await roomApi.findRoomId(userId.value, members[0])
+      roomId.value = result.data
+    } else {
+      const result = await roomApi.createGroupRoom(members)
+      roomId.value = result.data
+    }
     closeTeamChatDialog()
     enterRoom()
   } catch (error) {

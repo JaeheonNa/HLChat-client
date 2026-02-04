@@ -38,11 +38,20 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const token = sessionStorage.getItem('access_token')
     const userId = sessionStorage.getItem('user_id')
     const username = sessionStorage.getItem('username')
-    const guestPages = ['/hl-chat/log-in', '/hl-chat/register']
+    const guestPages = [
+      '/hl-chat/log-in',
+      '/hl-chat/register',
+      '/hl-chat/kakao/callback',
+      '/hl-chat/kakao-register'
+    ]
     const isGuestPage = guestPages.includes(to.path)
 
     // 로그인 상태에서 로그인/회원가입 페이지 접근 시
-    if (isGuestPage && token && userId && username) {
+    // 단, 카카오 연동 모드일 때는 콜백 페이지로 진입 허용
+    const isKakaoLinkMode = sessionStorage.getItem('kakao_link_mode') === 'true'
+    const isKakaoCallback = to.path === '/hl-chat/kakao/callback'
+
+    if (isGuestPage && token && userId && username && !(isKakaoLinkMode && isKakaoCallback)) {
       try {
         // 토큰 유효성 검증
         await userApi.verifyToken()

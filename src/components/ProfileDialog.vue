@@ -9,7 +9,7 @@
 
       <q-card-section class="text-center q-pt-lg">
         <q-avatar size="100px" class="q-mb-md profile-avatar">
-          <img v-if="profile.profile_image" :src="profile.profile_image" />
+          <img v-if="profile.profile_image" :src="getProfileImageUrl(profile.profile_image)" />
           <q-icon v-else name="person" size="60px" color="grey-5" />
         </q-avatar>
         <input
@@ -73,12 +73,34 @@
               <q-item-label>{{ formatPhone(profile.phone) || '-' }}</q-item-label>
             </q-item-section>
           </q-item>
+          <q-item v-if="profile.provider && profile.provider.toUpperCase() !== 'LOCAL'">
+            <q-item-section avatar>
+              <q-icon name="link" color="primary" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label caption>연동 계정</q-item-label>
+              <q-item-label>
+                <q-badge color="warning" text-color="dark" label="카카오" />
+              </q-item-label>
+            </q-item-section>
+          </q-item>
         </q-list>
       </q-card-section>
 
       <q-separator />
 
       <q-card-actions vertical class="q-pa-md">
+        <div
+          v-if="!profile.provider || profile.provider.toUpperCase() === 'LOCAL'"
+          class="kakao-link-btn full-width q-mb-sm q-pa-md text-center cursor-pointer"
+          style="border-radius: 4px;"
+          @click="testClick"
+        >
+          <svg class="kakao-icon q-mr-sm" width="18" height="18" viewBox="0 0 24 24" fill="none" style="vertical-align: middle; display: inline-block;">
+            <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.84 5.18 4.6 6.54-.2.76-.74 2.74-.84 3.18-.14.54.2.54.42.4.18-.12 2.82-1.92 3.96-2.7.6.08 1.22.12 1.86.12 5.52 0 10-3.48 10-7.78S17.52 3 12 3z" fill="#3C1E1E"/>
+          </svg>
+          <span>카카오 계정 연동</span>
+        </div>
         <q-btn
           outline
           color="primary"
@@ -111,6 +133,18 @@ import { useQuasar } from 'quasar'
 import { userApi } from 'src/api/userApi'
 import PasswordChangeDialog from 'src/components/PasswordChangeDialog.vue'
 
+const STATIC_BASE_URL = process.env.API_BASE_URL === '/api'
+  ? ''  // 프로덕션: 상대 경로 사용 (nginx가 /static을 백엔드로 프록시)
+  : (process.env.API_BASE_URL || 'http://localhost:8000')
+
+const getProfileImageUrl = (imageUrl) => {
+  if (!imageUrl) return null
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl
+  }
+  return `${STATIC_BASE_URL}${imageUrl}`
+}
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -133,11 +167,13 @@ const profile = ref({
   user_name: '',
   email: '',
   phone: '',
-  profile_image: ''
+  profile_image: '',
+  provider: 'LOCAL'
 })
 const showPasswordDialog = ref(false)
 const uploadingImage = ref(false)
 const fileInput = ref(null)
+const linkingKakao = ref(false)
 
 watch(dialogVisible, (newVal) => {
   if (newVal) {
@@ -157,9 +193,40 @@ const loadProfile = async () => {
       user_name: currentPath.username || '',
       email: '',
       phone: '',
-      profile_image: ''
+      profile_image: '',
+      provider: 'LOCAL'
     }
   }
+}
+
+const testClick = () => {
+  console.log('testClick called')
+  handleKakaoLink()
+}
+
+const handleKakaoLink = () => {
+  console.log('handleKakaoLink called')
+  linkingKakao.value = true
+
+  userApi.getKakaoAuthUrl()
+    .then(response => {
+      console.log('Kakao auth URL response:', response.data)
+      sessionStorage.setItem('kakao_link_mode', 'true')
+      sessionStorage.setItem('kakao_link_user_id', profile.value.user_id)
+      console.log('Redirecting to:', response.data.auth_url)
+      window.location.href = response.data.auth_url
+    })
+    .catch(error => {
+      console.error('Kakao link error:', error)
+      $q.notify({
+        type: 'negative',
+        message: '카카오 연동에 실패했습니다',
+        position: 'top'
+      })
+    })
+    .finally(() => {
+      linkingKakao.value = false
+    })
 }
 
 const formatPhone = (phone) => {
@@ -231,5 +298,18 @@ const handleLogout = () => {
 .profile-avatar {
   background-color: #f5f5f5;
   border: 2px solid #e0e0e0;
+}
+
+.kakao-link-btn {
+  background-color: #FEE500 !important;
+  color: #3C1E1E !important;
+}
+
+.kakao-link-btn:hover {
+  background-color: #F5DC00 !important;
+}
+
+.kakao-icon {
+  flex-shrink: 0;
 }
 </style>

@@ -1,5 +1,6 @@
-import { defineBoot } from '#q-app/wrappers'
+import {defineBoot} from '#q-app/wrappers'
 import axios from 'axios'
+import CryptoJS from 'crypto-js';
 
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
@@ -38,6 +39,7 @@ api.interceptors.response.use(
 
 export const authApi = {
   async login(credentials) {
+    credentials.password = CryptoJS.SHA256(credentials.user_id + credentials.password).toString()
     return await api.post('/user/log-in', credentials)
   },
 

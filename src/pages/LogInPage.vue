@@ -47,6 +47,14 @@
             size="lg"
             :loading="loading"
           />
+
+          <div class="flex items-center q-my-md">
+            <q-separator class="col" />
+            <span class="q-mx-sm text-grey-6 text-caption">또는</span>
+            <q-separator class="col" />
+          </div>
+
+          <KakaoLoginButton />
         </q-form>
       </q-card-section>
 
@@ -80,6 +88,7 @@ import { useQuasar } from 'quasar'
 import { authApi } from 'boot/axios.js'
 import RegisterDialog from 'src/components/RegisterDialog.vue'
 import PasswordChangeDialog from 'src/components/PasswordChangeDialog.vue'
+import KakaoLoginButton from 'src/components/KakaoLoginButton.vue'
 
 const router = useRouter()
 const $q = useQuasar()
@@ -125,9 +134,18 @@ const handleLogin = async () => {
   } catch (error) {
     console.error('Login error:', error)
 
+    const status = error.response?.status
+    let message = '로그인에 실패했습니다'
+
+    if (status === 401 || status === 404) {
+      message = 'ID 및 패스워드를 확인해주세요'
+    } else if (status === 403) {
+      message = error.response?.data?.detail || '비활성화된 계정입니다'
+    }
+
     $q.notify({
       type: 'negative',
-      message: error.response?.data?.detail || '로그인에 실패했습니다',
+      message: message,
       position: 'top'
     })
   } finally {

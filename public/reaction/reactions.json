@@ -1,0 +1,10 @@
+{
+  "reactions": [
+    { "id": "thumbsup", "file": "thumbsup.svg", "name": "좋아요" },
+    { "id": "heart", "file": "heart.svg", "name": "하트" },
+    { "id": "laugh", "file": "laugh.svg", "name": "웃음" },
+    { "id": "sad", "file": "sad.svg", "name": "슬픔" },
+    { "id": "angry", "file": "angry.svg", "name": "화남" },
+    { "id": "surprised", "file": "surprised.svg", "name": "놀람" }
+  ]
+}

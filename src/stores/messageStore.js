@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { messageApi } from 'src/api/messageApi'
 import { WebSocketClient } from 'src/api/websocketClient'
+import { useReactionStore } from 'stores/reactionStore'
 
 export const useMessageStore = defineStore('message', {
   // Vue2의 data()와 비슷
@@ -27,37 +28,49 @@ export const useMessageStore = defineStore('message', {
 
   // Vue2의 methods와 비슷
   actions: {
-    async connectToServer(userList) {
+    async connectToServer(userList, userId) {
       for (let i = 0; i < userList.length; i ++) {
-        this.members[userList[i].user_id] = userList[i].user_name
+        this.members[userList[i].user_id] = {
+          user_name: userList[i].user_name,
+          profile_image: userList[i].profile_image
+        }
       }
       if (this.wsClient) {
         this.disconnectRoom()
       }
-
-      // this.lastMessages = new Set()
       this.isLoading = true
-
-      // WebSocket 연결
       this.wsClient = new WebSocketClient()
 
       this.wsClient.onMessage((message) => {
+        // ping 메시지 무시
+        if (message.type === 'ping') {
+          return
+        }
+
+        // 반응 메시지 처리
+        if (message.type === 'reaction') {
+          this.handleReactionMessage(message)
+          return
+        }
+
+        // 일반 메시지 처리
         this.rcvMessageCnt++
         this.addMessage(message)
       })
 
-      this.wsClient.connect()
+      this.wsClient.connect(userId)
       this.isConnected = true
       this.isLoading = false
     },
-
     addMessage(message) {
+      const member = this.members[message.messageData.lastUserId] || {}
       const normalizedMessage = {
         roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
         roomName: message.messageData.roomName,
         content: message.messageData.lastUpdateMessage,
         senderId: message.messageData.lastUserId,
-        senderName: this.members[message.messageData.lastUserId],
+        senderName: member.user_name || message.messageData.lastUserId,
+        senderProfileImage: member.profile_image,
         timestamp: message.messageData.lastUpdateAt,
         lastRead: message.messageData.unreadMessageCount,
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
@@ -76,7 +89,6 @@ export const useMessageStore = defineStore('message', {
     },
 
     async sendMessage(content) {
-
       try {
         await messageApi.sendMessage(content)
       } catch (error) {
@@ -106,6 +118,21 @@ export const useMessageStore = defineStore('message', {
       this.rcvMessageCnt += normalizedMessages.length
       let messages = this.xRoomsMessages.get(roomId)
       messages.unshift(...normalizedMessages)
+    },
+    clearLeavedRoomMessage(roomId) {
+      this.xRoomsMessages.delete(roomId)
+      this.lastMessages.delete(Number(roomId))
+    },
+
+    // WebSocket에서 받은 반응 메시지 처리
+    handleReactionMessage(message) {
+      // message 구조: { type: 'reaction', messageLnNo, reactions, ... }
+      const reactionStore = useReactionStore()
+      reactionStore.updateLocalReactions(
+        Number(message.roomId),
+        message.messageLnNo,
+        message.reactions
+      )
     }
   }
 })

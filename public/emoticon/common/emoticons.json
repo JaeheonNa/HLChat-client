@@ -1,0 +1,11 @@
+{
+  "emoticons": [
+    { "id": "smile", "file": "smile.svg", "name": "웃음" },
+    { "id": "laugh", "file": "laugh.svg", "name": "크게웃음" },
+    { "id": "heart", "file": "heart.svg", "name": "하트" },
+    { "id": "thumbsup", "file": "thumbsup.svg", "name": "좋아요" },
+    { "id": "sad", "file": "sad.svg", "name": "슬픔" },
+    { "id": "angry", "file": "angry.svg", "name": "화남" },
+    { "id": "mong", "file": "iu.png", "name": "아이유" }
+  ]
+}

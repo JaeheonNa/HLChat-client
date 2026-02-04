@@ -7,12 +7,14 @@ export const messageApi = {
   async findMessagesByRoomId(roomId, members) {
     let messages =  await api.get("/hl-chat/init/"+ roomId)
     return messages.data.map(message => {
+      const member = members[message.messageData.lastUserId] || {}
       const normalizedMessage = {
         roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
         roomName: message.messageData.roomName,
         content: message.messageData.lastUpdateMessage,
         senderId: message.messageData.lastUserId,
-        senderName: members[message.messageData.lastUserId],
+        senderName: member.user_name || message.messageData.lastUserId,
+        senderProfileImage: member.profile_image,
         timestamp: message.messageData.lastUpdateAt,
         lastRead: message.messageData.unreadMessageCount,
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,
@@ -33,12 +35,14 @@ export const messageApi = {
     let messages = await api.get("/hl-chat/"+ roomId + "/" + MessageLnNo)
 
     return messages.data.map(message => {
+      const member = members[message.messageData.lastUserId] || {}
       const normalizedMessage = {
         roomId: message.roomId, //  || `${Date.now()}_${Math.random()}`,
         roomName: message.messageData.roomName,
         content: message.messageData.lastUpdateMessage,
         senderId: message.messageData.lastUserId,
-        senderName: members[message.messageData.lastUserId],
+        senderName: member.user_name || message.messageData.lastUserId,
+        senderProfileImage: member.profile_image,
         timestamp: message.messageData.lastUpdateAt,
         lastRead: message.messageData.unreadMessageCount,
         lastUpdateMessageLnNo: message.messageData.lastUpdateMessageLnNo,

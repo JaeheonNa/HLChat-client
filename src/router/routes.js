@@ -10,6 +10,16 @@ const routes = [
         meta: { requiresGuest: true }
       },
       {
+        path: '/hl-chat/kakao/callback',
+        component: () => import('pages/KakaoCallbackPage.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
+        path: '/hl-chat/kakao-register',
+        component: () => import('pages/KakaoRegisterPage.vue'),
+        meta: { requiresGuest: true }
+      },
+      {
         path: '/hl-chat/:username/:userId',
         component: () => import('pages/IndexPage.vue'),
         meta: { requiresAuth: true },

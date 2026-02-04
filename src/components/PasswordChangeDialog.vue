@@ -72,6 +72,16 @@
             </template>
           </q-input>
         </q-form>
+
+        <template v-if="!forced">
+          <div class="flex items-center q-my-md">
+            <q-separator class="col" />
+            <span class="q-mx-sm text-grey-6 text-caption">또는</span>
+            <q-separator class="col" />
+          </div>
+
+          <KakaoLoginButton />
+        </template>
       </q-card-section>
 
       <q-card-actions align="right">
@@ -98,6 +108,7 @@
 import { ref, computed, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { userApi } from 'src/api/userApi'
+import KakaoLoginButton from 'src/components/KakaoLoginButton.vue'
 
 const props = defineProps({
   modelValue: {
